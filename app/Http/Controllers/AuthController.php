@@ -4,72 +4,82 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    public function register()
-    {
-        //return view('auth.register');
-    }
-
-    public function login()
-    {
-         if(auth()->check())
-         {
-             return redirect()->route('home');
-         }
-
-        return view('login');
-    }
-    public function logout(Request $request)
-    {
-        Auth::logout();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect()->route('home');
-    }
-    public function registerpost (Request $request)
+    /**
+     * ثبت‌نام کاربر جدید
+     */
+    public function registerPost(Request $request)
     {
         $request->validate([
-            'user_name' => 'required' ,
-            'email' => 'required|email|unique:users' ,
-            'password' => 'required|min:5|confirmed'
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:5'
         ]);
 
-
-
         $user = User::create([
-            'user_name' => $request->user_name,
+            'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password)
         ]);
 
-        if(!$user)
-        {
-            return redirect()->back()->with('error' , 'Registration failed, try again');
-        }
+        // ایجاد توکن بلافاصله بعد از ثبت‌نام
+        $token = $user->createToken('api_token')->plainTextToken;
 
-        return redirect()->route('home')->with('Success' , 'Registration Success, login to access');
+        return response()->json([
+            'message' => 'Registration successful',
+            'user' => $user,
+            'token' => $token
+        ], 201);
     }
 
-    public function loginpost (Request $request)
+    /**
+     * ورود کاربر و صدور توکن
+     */
+    public function loginPost(Request $request)
     {
         $credentials = $request->validate([
-            'email' => 'required|email|exists:users' ,
+            'email' => 'required|email|exists:users,email',
             'password' => 'required|min:5'
         ]);
 
-        if(Auth::attempt($credentials))
-        {
-            return redirect()->route('home');
+        if (!Auth::attempt($credentials)) {
+            return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        return redirect()->route('login')->with('erorr' , 'Login details are not valid');
+        $user = Auth::user();
+        $token = $user->createToken('api_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login successful',
+            'user' => $user,
+            'token' => $token
+        ]);
     }
 
+    /**
+     * خروج کاربر (حذف توکن جاری)
+     */
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
 
+        return response()->json([
+            'message' => 'Logged out successfully'
+        ]);
+    }
+
+    /**
+     * داشبورد یا پروفایل کاربر
+     */
+    public function dashboard(Request $request)
+    {
+        return response()->json([
+            'message' => 'Welcome to your dashboard',
+            'user' => $request->user()
+        ]);
+    }
 }
