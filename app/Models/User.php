@@ -23,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'profile_completed',
+        'phone',
     ];
 
     /**
@@ -46,6 +47,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'profile_completed' => 'boolean',
+            'phone' => 'string',
         ];
     }
 }
