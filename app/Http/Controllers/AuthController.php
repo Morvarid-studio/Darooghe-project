@@ -18,12 +18,13 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:11',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:5'
+            'password' => 'required|min:5|max:8',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
             'password' => Hash::make($request->password)
         ]);
 
@@ -43,7 +44,7 @@ class AuthController extends Controller
     public function loginPost(Request $request)
     {
         $credentials = $request->validate([
-            'email' => 'required|email|exists:users,email',
+            'name' => 'required|exists:users,name',
             'password' => 'required|min:5'
         ]);
 
