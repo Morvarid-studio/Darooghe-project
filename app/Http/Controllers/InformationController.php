@@ -13,7 +13,7 @@ class InformationController extends Controller
     /**
      * ذخیره اطلاعات جدید در جدول information
      */
-    public function store(Request $request)
+    public function informationPost(Request $request)
     {
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
