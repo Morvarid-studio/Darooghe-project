@@ -1,4 +1,4 @@
-<?php
+1<?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -6,9 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+
     public function up(): void
     {
         Schema::create('information', function (Blueprint $table) {
@@ -17,7 +15,7 @@ return new class extends Migration
 
             $table->string('first_name', 255);
             $table->string('last_name', 255);
-            $table->string('email', 255)->unique();
+            $table->string('phone', 11);
             $table->text('address');
             $table->date('birthday');
             $table->enum('gender', ['Male', 'Female']);
@@ -35,7 +33,7 @@ return new class extends Migration
                 'فوق لیسانس',
                 'دکترا'
             ]);
-            $table->char('phone', 11)->nullable()->unique();
+
             $table->text('emergency_contact_info')->nullable();
             $table->string('emergency_contact_number', 11)->nullable();
 

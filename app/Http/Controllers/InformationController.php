@@ -18,13 +18,12 @@ class InformationController extends Controller
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
-            'email'      => 'required|email|unique:information,email',
             'address'    => 'required|string',
             'birthday'   => 'required|date',
             'gender'     => 'required|in:Male,Female',
             'military'   => 'required|string',
             'degree'     => 'required|string',
-            'phone'      => 'nullable|string|size:11|unique:information,phone',
+            'phone'      => 'required|string|size:11|unique:information,phone|numeric|regex:/^(?:\+98|0)?9\d{9}$/',
             'emergency_contact_info' => 'nullable|string',
             'emergency_contact_number' => 'nullable|string|size:11',
             'education_status' => 'nullable|string',
@@ -57,7 +56,7 @@ class InformationController extends Controller
     /**
      * نمایش یک رکورد خاص
      */
-    public function show(Information $information)
+    public function showInformation(Information $information)
     {
         return response()->json($information);
     }
@@ -70,13 +69,13 @@ class InformationController extends Controller
         $validated = $request->validate([
             'first_name' => 'sometimes|required|string|max:255',
             'last_name'  => 'sometimes|required|string|max:255',
-            'email'      => 'sometimes|required|email|unique:information,email,' . $information->id,
+
             'address'    => 'sometimes|required|string',
             'birthday'   => 'sometimes|required|date',
             'gender'     => 'sometimes|required|in:Male,Female',
             'military'   => 'sometimes|required|string',
             'degree'     => 'sometimes|required|string',
-            'phone'      => 'nullable|string|size:11|unique:information,phone,' . $information->id,
+            'phone'      => 'nullable|string|size:11|unique:information,phone,regex:/^(?:\+98|0)?9\d{9}$/' . $information->id,
             'emergency_contact_info' => 'nullable|string',
             'emergency_contact_number' => 'nullable|string|size:11',
             'education_status' => 'nullable|string',

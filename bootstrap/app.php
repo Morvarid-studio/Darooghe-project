@@ -9,13 +9,13 @@ return Application::configure(basePath: dirname(__DIR__))
     // مسیرهای وب (برای viewها)
         web: __DIR__ . '/../routes/web.php',
 
-        // مسیرهای API (برای Sanctum و درخواست‌های JSON)
+        // مسیرهای API
         api: __DIR__ . '/../routes/api.php',
 
-        // دستورات کنسول (اختیاری)
+        // دستورات کنسول
         commands: __DIR__ . '/../routes/console.php',
 
-        // مسیر سلامت سرور (اختیاری)
+        // مسیر سلامت سرور
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
@@ -37,7 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // ✅ گروه api (برای درخواست‌های JSON و Sanctum)
         $middleware->group('api', [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            //\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, جهت جلوگیری از ارور CRTF
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
     })

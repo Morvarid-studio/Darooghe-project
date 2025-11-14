@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -15,17 +16,15 @@ class AuthController extends Controller
     public function registerPost(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:11',
+            'user_name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:5',
+            'password' => 'required|min:8|string|regex:/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/',
 
         ]);
 
         $user = User::create([
-            'name' => $request->name,
+            'user_name' => $request->user_name,
             'email' => $request->email,
-            'phone' => $request->phone,
             'password' => Hash::make($request->password)
         ]);
 
@@ -45,7 +44,7 @@ class AuthController extends Controller
     public function loginPost(Request $request)
     {
         $credentials = $request->validate([
-            'name' => 'required|exists:users,name',
+            'user_name' => 'required|exists:users,user_name',
             'password' => 'required|min:5'
         ]);
 
@@ -83,6 +82,40 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Welcome to your dashboard',
             'user' => $request->user()
+        ]);
+    }
+    public function update(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'username' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('users')->ignore($user->id),
+            ],
+            'current_password' => ['required', 'string'],
+            'new_password' => ['nullable', 'string', 'min:8', 'confirmed'], // new_password_confirmation
+        ]);
+
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return response()->json([
+                'message' => 'رمز عبور فعلی اشتباه است.'
+            ], 403);
+        }
+
+        $user->username = $validated['username'];
+
+        if (!empty($validated['new_password'])) {
+            $user->password = Hash::make($validated['new_password']);
+        }
+
+        $user->save();
+
+        return response()->json([
+            'message' => 'اطلاعات با موفقیت به‌روزرسانی شد.',
+            'user' => $user
         ]);
     }
 }

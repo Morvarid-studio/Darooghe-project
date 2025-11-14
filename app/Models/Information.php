@@ -9,13 +9,12 @@ class Information extends Model
 {
     use HasFactory;
 
-    protected $table = 'information'; // چون جدول جمع نیست، بهتر است نام جدول را مشخص کنیم
+    protected $table = 'information';
 
     protected $fillable = [
         'user_id',
         'first_name',
         'last_name',
-        'email',
         'address',
         'birthday',
         'gender',
@@ -31,8 +30,6 @@ class Information extends Model
         'profession',
         'languages',
     ];
-
-    // ارتباط با مدل User (کاربر)
     public function user()
     {
         return $this->belongsTo(User::class);

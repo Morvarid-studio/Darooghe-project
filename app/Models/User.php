@@ -19,7 +19,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'user_name',
         'email',
         'password',
         'profile_completed',
@@ -49,5 +49,10 @@ class User extends Authenticatable
             'profile_completed' => 'boolean',
             'phone' => 'string',
         ];
+    }
+
+    public function workLogs()
+    {
+        return $this->hasMany(WorkLog::class);
     }
 }
