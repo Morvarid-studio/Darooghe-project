@@ -23,7 +23,7 @@ class InformationController extends Controller
             'gender'     => 'required|in:Male,Female',
             'military'   => 'required|string',
             'degree'     => 'required|string',
-            'phone'      => 'required|string|size:11|unique:information,phone|numeric|regex:/^(?:\+98|0)?9\d{9}$/',
+            'phone' => ['required','string','unique:information,phone','regex:/^(?:\+98|0)9\d{9}$/',],
             'emergency_contact_info' => 'nullable|string',
             'emergency_contact_number' => 'nullable|string|size:11',
             'education_status' => 'nullable|string',
@@ -64,8 +64,9 @@ class InformationController extends Controller
     /**
      * بروزرسانی اطلاعات موجود
      */
-    public function update(Request $request, Information $information)
+    public function update(Request $request)
     {
+        $validated['user_id'] = auth()->id();
         $validated = $request->validate([
             'first_name' => 'sometimes|required|string|max:255',
             'last_name'  => 'sometimes|required|string|max:255',
@@ -75,7 +76,7 @@ class InformationController extends Controller
             'gender'     => 'sometimes|required|in:Male,Female',
             'military'   => 'sometimes|required|string',
             'degree'     => 'sometimes|required|string',
-            'phone'      => 'nullable|string|size:11|unique:information,phone,regex:/^(?:\+98|0)?9\d{9}$/' . $information->id,
+            'phone' => ['nullable','string','regex:/^(?:\+98|0)9\d{9}$/','unique:information,phone,'.auth()->id()],
             'emergency_contact_info' => 'nullable|string',
             'emergency_contact_number' => 'nullable|string|size:11',
             'education_status' => 'nullable|string',
@@ -85,6 +86,8 @@ class InformationController extends Controller
             'resume' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
+        $information = Information::firstOrNew(['user_id' => auth()->id()]);
+
 
         // آپلود جدید در صورت وجود
         if ($request->hasFile('resume')) {
@@ -97,7 +100,8 @@ class InformationController extends Controller
             $validated['profile_photo'] = $request->file('profile_photo')->store('profiles', 'public');
         }
 
-        $information->update($validated);
+        $information->fill($validated);
+        $information->save();
 
         return response()->json([
             'message' => 'اطلاعات با موفقیت بروزرسانی شد.',

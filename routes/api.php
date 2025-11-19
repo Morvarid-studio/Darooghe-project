@@ -1,5 +1,6 @@
 <?php
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BankInfoController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InformationController;
 use App\Http\Controllers\WorklogController;
@@ -31,6 +32,13 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('worklogs_archive'); //ارشیو ساعت کاری
     Route::patch('/worklogs/restore', [WorklogController::class, 'restore'])
         ->name('worklogs_restore'); // بازیابی رکورد ارشیو شده
+
+    Route::post('/bankinfo', [BankInfoController::class, 'store'])
+        ->name('bankinfo_store');
+    Route::get('/bankinfo', [BankInfoController::class, 'show'])
+        ->name('bankinfo_show');
+    Route::patch('/bankinfo', [BankInfoController::class, 'update'])
+        ->name('bankinfo_update');
 });
 
 

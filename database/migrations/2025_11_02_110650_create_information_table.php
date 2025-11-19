@@ -19,13 +19,7 @@ return new class extends Migration
             $table->text('address');
             $table->date('birthday');
             $table->enum('gender', ['Male', 'Female']);
-            $table->enum('military' , [
-                'معاف' ,
-                'پایان خدمت' ,
-                'دارای معافیت تحصیلی' ,
-                'مشمول' ,
-                'ویژه بانوان – معاف از خدمت سربازی'
-            ]);
+            $table->string('military');
             $table->enum('degree', [
                 'دیپلم',
                 'کاردانی',
