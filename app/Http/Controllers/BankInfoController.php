@@ -51,7 +51,12 @@ class BankInfoController extends Controller
 
     public function update(Request $request)
     {
-        $validated['user_id'] = auth()->id();
+
+        $oldBankInfo = BankInfo::where('user_id', auth()->id())
+            ->where('archived', false)
+            ->first();
+
+
         $validated = $request->validate([
             'bank_name'      => 'sometimes|required|string|max:255',
             'branch_name'    => 'sometimes|required|string|max:255',
@@ -62,15 +67,25 @@ class BankInfoController extends Controller
             'is_active'      => 'nullable|boolean',
         ]);
 
-        $bankInfo = BankInfo ::firstOrNew(['user_id' => auth()->id()]);
+
+        if ($oldBankInfo) {
+            $oldBankInfo->update([
+                'archived' => true,
+            ]);
+        }
 
 
-        $bankInfo->fill($validated);
-        $bankInfo->save();
+        $newBankInfo = BankInfo::create(array_merge(
+            $validated,
+            [
+                'user_id' => auth()->id(),
+                'archived' => false,
+            ]
+        ));
 
         return response()->json([
-            'message' => 'اطلاعات با موفقیت بروزرسانی شد.',
-            'data' => $bankInfo
+            'message' => 'اطلاعات جدید ثبت شد.',
+            'data' => $newBankInfo
         ]);
     }
 

@@ -1,6 +1,7 @@
 <?php
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BankInfoController;
+use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InformationController;
 use App\Http\Controllers\WorklogController;
@@ -18,7 +19,6 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('api_information'); //برگرداندن اطلاعات کاربر
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('api_logout');// خروج کاربر
-
     Route::post('/dashboard/update_auth', [AuthController::class, 'update'])
         ->name('api_update_auth');// بروزرسانی رمز و نام کاربری و ایمیل
     Route::post('/dashboard/update_information', [InformationController::class, 'update'])
@@ -37,8 +37,17 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('bankinfo_store');
     Route::get('/bankinfo', [BankInfoController::class, 'show'])
         ->name('bankinfo_show');
-    Route::patch('/bankinfo', [BankInfoController::class, 'update'])
+    Route::post('/bankinfo', [BankInfoController::class, 'update'])
         ->name('bankinfo_update');
+
+    Route::post('/dashboard/transactions', [TransactionController::class, 'store'])
+        ->name('transactions_store'); //ثبت تراکنش
+    Route::get('/dashboard//transactions', [TransactionController::class, 'index'])
+        ->name('transactions_show'); //نمایش تراکنش های کاربر به کاربر
+    Route::patch('/dashboard/transactions/archive', [TransactionController::class, 'archive'])
+        ->name('transactions_archive'); // آرشیو تراکنش کاربر توسط خود کاربر
+    Route::patch('/dashboard/transactions/restore', [TransactionController::class, 'restore'])
+        ->name('transactions_restore'); //بازیابی تراکنش کاربر توسط خود کاربر
 });
 
 

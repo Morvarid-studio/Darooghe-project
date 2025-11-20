@@ -46,6 +46,7 @@ return new class extends Migration
             $table->string('profile_photo')->nullable();
             $table->text('profession')->nullable();
             $table->text('languages')->nullable();
+            $table->boolean('archive');
 
             $table->timestamps();
         });
