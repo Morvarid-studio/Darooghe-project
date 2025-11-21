@@ -41,7 +41,7 @@ class TransactionController extends Controller
         ], 201);
     }
 
-    public function index()
+    public function show()
     {
         $user = Auth::user();
 

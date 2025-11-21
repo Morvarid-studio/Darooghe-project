@@ -13,18 +13,18 @@ Route::post('/login', [AuthController::class, 'loginPost'])
     ->name('api_login'); // ورود کاربر
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/dashboard/information', [InformationController::class, 'informationPost'])
+    Route::post('/dashboard/information', [InformationController::class, 'store'])
         ->name('api_information'); // ثبت اطلاعات کاربر
-    Route::get('/dashboard/information', [InformationController::class, 'showInformation'])
+    Route::get('/dashboard/information', [InformationController::class, 'show'])
         ->name('api_information'); //برگرداندن اطلاعات کاربر
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('api_logout');// خروج کاربر
     Route::post('/dashboard/update_auth', [AuthController::class, 'update'])
         ->name('api_update_auth');// بروزرسانی رمز و نام کاربری و ایمیل
-    Route::post('/dashboard/update_information', [InformationController::class, 'update'])
+    Route::post('/dashboard/updateinformation', [InformationController::class, 'update'])
         ->name('api_update_information');// بروزرسانی اطلاعات
 
-    Route::get('/worklogs', [WorklogController::class, 'index'])
+    Route::get('/worklogs', [WorklogController::class, 'show'])
         ->name('worklogs_index'); //برگرداندن ساعات کاری
     Route::post('/worklogs', [WorklogController::class, 'store'])
         ->name('worklogs_store'); // ثبت ساعات کاری
@@ -42,7 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/dashboard/transactions', [TransactionController::class, 'store'])
         ->name('transactions_store'); //ثبت تراکنش
-    Route::get('/dashboard//transactions', [TransactionController::class, 'index'])
+    Route::get('/dashboard//transactions', [TransactionController::class, 'show'])
         ->name('transactions_show'); //نمایش تراکنش های کاربر به کاربر
     Route::patch('/dashboard/transactions/archive', [TransactionController::class, 'archive'])
         ->name('transactions_archive'); // آرشیو تراکنش کاربر توسط خود کاربر

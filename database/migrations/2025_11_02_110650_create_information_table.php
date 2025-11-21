@@ -47,7 +47,7 @@ return new class extends Migration
             $table->text('profession')->nullable();
             $table->text('languages')->nullable();
             $table->boolean('archive');
-
+            $table->Decimal('salary', 12, 2)->default(0);
             $table->timestamps();
         });
     }

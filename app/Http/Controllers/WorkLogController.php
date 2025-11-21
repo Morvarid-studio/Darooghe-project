@@ -47,7 +47,7 @@ class WorkLogController extends Controller
     /**
      * نمایش لیست رکوردهای فعال کاربر
      */
-    public function index()
+    public function show()
     {
         $user = Auth::user();
 
