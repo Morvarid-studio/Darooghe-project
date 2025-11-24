@@ -42,11 +42,12 @@ return new class extends Migration
                 'متأهل'
             ])->nullable();
 
+            $table->string('identity_document');
             $table->string('resume')->nullable(); // مسیر فایل
             $table->string('profile_photo')->nullable();
             $table->text('profession')->nullable();
             $table->text('languages')->nullable();
-            $table->boolean('archive');
+            $table->boolean('archive')->default(true);
             $table->Decimal('base_salary', 12, 2)->default(0);
             $table->timestamps();
         });

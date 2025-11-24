@@ -194,45 +194,37 @@ class WorkLogController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        // امروز
         $today = Carbon::today();
+        $startDate = $today->copy()->subDays(6);
 
-        // 7 روز قبل
-        $startDate = $today->copy()->subDays(6); // شامل امروز + 6 روز قبل = 7 روز
 
-        // گرفتن لاگ‌ها
         $logs = Worklog::where('user_id', $userId)
             ->where('archived', false)
             ->whereBetween('work_date', [$startDate, $today])
             ->orderBy('work_date')
             ->get();
 
-        // ساخت آرایه 7 روزه ثابت
+
         $result = [];
         for ($i = 0; $i < 7; $i++) {
-            $date = $startDate->copy()->addDays($i)->format('Y-m-d');
+            $date = $startDate->copy()->addDays($i);
+            $jDate = Jalalian::fromDateTime($date);
 
-            $result[$date] = 0; // مقدار پیش‌فرض
+            $result[$jDate->format('Y-m-d')] = [
+                'shamsi_date' => $jDate->format('Y/m/d'),
+                'day_name' => $jDate->getDayName(),
+                'total_hours' => 0
+            ];
         }
 
-        // پر کردن ساعت‌ها
         foreach ($logs as $log) {
             $dateKey = Carbon::parse($log->work_date)->format('Y-m-d');
-
             if (isset($result[$dateKey])) {
-                $result[$dateKey] += (float) $log->work_hours;
+                $result[$dateKey]['total_hours'] += (float) $log->work_hours;
             }
         }
 
-        // خروجی نهایی
-        $formatted = [];
-
-        foreach ($result as $date => $hours) {
-            $formatted[] = [
-                'date' => $date,
-                'total_hours' => $hours
-            ];
-        }
+        $formatted = array_values($result);
 
         return response()->json($formatted);
     }

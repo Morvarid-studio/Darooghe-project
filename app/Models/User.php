@@ -57,11 +57,11 @@ class User extends Authenticatable
     }
     public function bankInfo()
     {
-        return $this->hasOne(BankInfo::class);
+        return $this->hasMany(BankInfo::class);
     }
 
     public function information()
     {
-        return $this->hasOne(Information::class);
+        return $this->hasMany(Information::class);
     }
 }
