@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Worklog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
+use Morilog\Jalali\Jalalian;
+use Carbon\Carbon;
 class WorkLogController extends Controller
 {
     /**
@@ -95,5 +96,144 @@ class WorkLogController extends Controller
             'message' => 'رکورد بازیابی شد.',
             'data' => $record,
         ]);
+    }
+    public function MonthlyWorkHours()
+    {
+        $userId = auth()->id(); // گرفتن آیدی کاربر لاگین شده
+
+        if (!$userId) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // گرفتن لاگ‌های غیر آرشیوی
+        $logs = Worklog::where('user_id', $userId)
+            ->where('archived', false)
+            ->orderBy('work_date')
+            ->get();
+
+        $result = [];
+
+        foreach ($logs as $log) {
+
+            // تبدیل میلادی به شمسی
+            $jDate = Jalalian::fromDateTime($log->work_date);
+
+            // استخراج سال و ماه به صورت 1403-05
+            $shamsiMonth = $jDate->format('Y-m');
+
+            // جمع زدن ساعت‌ها
+            if (!isset($result[$shamsiMonth])) {
+                $result[$shamsiMonth] = 0;
+            }
+
+            $result[$shamsiMonth] += (float) $log->work_hours;
+
+        }
+        // تبدیل به خروجی JSON لیستی
+        $formatted = [];
+
+        foreach ($result as $month => $hours) {
+            $formatted[] = [
+                'month' => $month,
+                'total_hours' => $hours
+            ];
+        }
+        return response()->json($formatted);
+    }
+
+    public function WeeklyWorkHours()
+    {
+        $userId = auth()->id();
+
+        if (!$userId) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $logs = Worklog::where('user_id', $userId)
+            ->where('archived', false)
+            ->orderBy('work_date')
+            ->get();
+
+        $result = [];
+
+        foreach ($logs as $log) {
+
+            // تبدیل تاریخ میلادی به شمسی
+            $jDate = Jalalian::fromDateTime($log->work_date);
+
+            // استخراج سال و هفته شمسی
+            $year = $jDate->getYear();
+            $week = $jDate->getWeekOfYear(); // شماره هفته از 1 تا 53
+
+            $key = sprintf("%d-W%02d", $year, $week);
+
+            if (!isset($result[$key])) {
+                $result[$key] = 0;
+            }
+
+            $result[$key] += (float) $log->work_hours;
+        }
+
+        // تبدیل نتیجه به آرایه قابل ارسال به فرانت
+        $formatted = [];
+        foreach ($result as $week => $hours) {
+            $formatted[] = [
+                'week' => $week,
+                'total_hours' => $hours
+            ];
+        }
+
+        return response()->json($formatted);
+    }
+
+    public function LastSevenDaysWorkHours()
+    {
+        $userId = auth()->id();
+
+        if (!$userId) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // امروز
+        $today = Carbon::today();
+
+        // 7 روز قبل
+        $startDate = $today->copy()->subDays(6); // شامل امروز + 6 روز قبل = 7 روز
+
+        // گرفتن لاگ‌ها
+        $logs = Worklog::where('user_id', $userId)
+            ->where('archived', false)
+            ->whereBetween('work_date', [$startDate, $today])
+            ->orderBy('work_date')
+            ->get();
+
+        // ساخت آرایه 7 روزه ثابت
+        $result = [];
+        for ($i = 0; $i < 7; $i++) {
+            $date = $startDate->copy()->addDays($i)->format('Y-m-d');
+
+            $result[$date] = 0; // مقدار پیش‌فرض
+        }
+
+        // پر کردن ساعت‌ها
+        foreach ($logs as $log) {
+            $dateKey = Carbon::parse($log->work_date)->format('Y-m-d');
+
+            if (isset($result[$dateKey])) {
+                $result[$dateKey] += (float) $log->work_hours;
+            }
+        }
+
+        // خروجی نهایی
+        $formatted = [];
+
+        foreach ($result as $date => $hours) {
+            $formatted[] = [
+                'date' => $date,
+                'total_hours' => $hours
+            ];
+        }
+
+        return response()->json($formatted);
     }
 }
