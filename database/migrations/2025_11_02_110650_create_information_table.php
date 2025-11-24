@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::create('information', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained();
 
             $table->string('first_name', 255);
             $table->string('last_name', 255);
@@ -47,7 +47,7 @@ return new class extends Migration
             $table->text('profession')->nullable();
             $table->text('languages')->nullable();
             $table->boolean('archive');
-
+            $table->Decimal('base_salary', 12, 2)->default(0);
             $table->timestamps();
         });
     }

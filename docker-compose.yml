@@ -30,6 +30,7 @@ services:
       MYSQL_DATABASE: darooghe
       MYSQL_USER: user
       MYSQL_PASSWORD: pass
+      MYSQL_EVENT_SCHEDULER: ON
     ports:
       - "3306:3306"
 

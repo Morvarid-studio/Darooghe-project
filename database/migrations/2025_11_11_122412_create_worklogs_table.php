@@ -13,13 +13,12 @@ return new class extends Migration
     {
         Schema::create('worklogs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')
-                ->constrained() // ارجاع به جدول users
-                ->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->date('work_date');
             $table->decimal('work_hours', 5, 2);
             $table->string('description')->nullable();
             $table->boolean('archived')->default(false);
+            $table->boolean('is_paid')->default(false);
             $table->timestamps();
         });
     }

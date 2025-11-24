@@ -55,4 +55,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(WorkLog::class);
     }
+    public function bankInfo()
+    {
+        return $this->hasOne(BankInfo::class);
+    }
+
+    public function information()
+    {
+        return $this->hasOne(Information::class);
+    }
 }
