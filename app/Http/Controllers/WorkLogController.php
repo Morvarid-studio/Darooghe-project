@@ -24,8 +24,18 @@ class WorkLogController extends Controller
         ]);
 
         $records = [];
+        $threeDaysAgo = now()->subDays(3)->startOfDay();
 
         foreach ($validated['worklogs'] as $entry) {
+
+            // جلوگیری از ثبت ساعات کاری قدیمی‌تر از سه روز قبل
+            if (Carbon::parse($entry['work_date']) < $threeDaysAgo) {
+                return response()->json([
+                    'message' => 'ثبت ساعات کاری برای روزهای قدیمی‌تر از سه روز قبل مجاز نیست.',
+                    'invalid_date' => $entry['work_date']
+                ], 403);
+            }
+
             $records[] = [
                 'user_id' => $user->id,
                 'work_date' => $entry['work_date'],
@@ -44,6 +54,7 @@ class WorkLogController extends Controller
             'data' => $records,
         ]);
     }
+
 
     /**
      * نمایش لیست رکوردهای فعال کاربر
@@ -66,18 +77,29 @@ class WorkLogController extends Controller
     public function archive(Request $request)
     {
         $user = Auth::user();
-        $record = Worklog::where('id', $request-> id)
+
+        $record = Worklog::where('id', $request->id)
             ->where('user_id', $user->id)
             ->firstOrFail();
+
+        // جلوگیری از آرشیو رکوردهای قدیمی‌تر از ۳ روز اخیر
+        $threeDaysAgo = now()->subDays(3)->startOfDay();
+
+        if ($record->work_date < $threeDaysAgo) {
+            return response()->json([
+                'message' => 'شما اجازه آرشیو کردن رکوردهای قدیمی‌تر از سه روز اخیر را ندارید.',
+            ], 403);
+        }
 
         $record->archived = true;
         $record->save();
 
         return response()->json([
-            'message' => 'رکورد آرشیو شد.',
+            'message' => 'رکورد با موفقیت آرشیو شد.',
             'data' => $record,
         ]);
     }
+
 
     /**
      * بازیابی یک رکورد آرشیو شده
