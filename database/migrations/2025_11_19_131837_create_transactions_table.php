@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('amount_decimal', 18, 2); //میزان پرداختی
             $table->string('amount_string');
             $table->string('category'); // ????
-            $table->string('type', 255); //نوع پرداخت
+            $table->string('type', 255); //نوع پرداخت برای اینکه در سیستم مالی به مشکل بر نخوریم باید تنها دو حالت بفرستد cost & receive
             $table->string('handled_by'); //توسط چه کسی
             $table->string('from_account'); //از چه حسابی
             $table->string('to_account'); // برای چه حسابی

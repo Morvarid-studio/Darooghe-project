@@ -32,6 +32,12 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('worklogs_archive'); //ارشیو ساعت کاری
     Route::patch('/worklogs/restore', [WorklogController::class, 'restore'])
         ->name('worklogs_restore'); // بازیابی رکورد ارشیو شده
+    Route::get('/worklogs/monthly_report', [WorklogController::class, 'MonthlyWorkHours'])
+        ->name('worklogs_monthly_report');
+    Route::get('/worklogs/weekly_report', [WorklogController::class, 'WeeklyWorkHours'])
+        ->name('worklogs_weekly_report');
+    Route::get('/worklogs/last_seven_days', [WorklogController::class, 'LastSevenDaysWorkHours'])
+        ->name('worklogs_last_seven_days_report');
 
     Route::post('/bankinfo', [BankInfoController::class, 'store'])
         ->name('bankinfo_store');

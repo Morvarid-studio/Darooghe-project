@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('bank_infos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained();
             $table->string('bank_name', 255)->nullable();
             $table->string('branch_name', 255)->nullable();
             $table->string('branch_code', 255)->nullable();
