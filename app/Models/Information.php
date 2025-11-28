@@ -29,6 +29,9 @@ class Information extends Model
         'profile_photo',
         'profession',
         'languages',
+        'identity_document',
+        'profile_accepted',
+        'archive',
     ];
     public function user()
     {

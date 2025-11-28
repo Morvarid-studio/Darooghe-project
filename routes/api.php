@@ -21,7 +21,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('api_logout');// خروج کاربر
     Route::post('/dashboard/update_auth', [AuthController::class, 'update'])
         ->name('api_update_auth');// بروزرسانی رمز و نام کاربری و ایمیل
-    Route::post('/dashboard/updateinformation', [InformationController::class, 'update'])
+    Route::post('/updateinformation', [InformationController::class, 'update'])
         ->name('api_update_information');// بروزرسانی اطلاعات
 
     Route::get('/worklogs', [WorklogController::class, 'show'])

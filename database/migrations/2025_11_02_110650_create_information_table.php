@@ -20,25 +20,25 @@ return new class extends Migration
             $table->enum('gender', ['Male', 'Female']);
             $table->string('military');
             $table->enum('degree', [
-                'دیپلم',
-                'کاردانی',
-                'لیسانس',
-                'فوق لیسانس',
-                'دکترا'
+                'Diploma',
+                'Associate',
+                'Bachelor',
+                'Master',
+                'PhD'
             ]);
 
             $table->text('emergency_contact_info')->nullable();
             $table->string('emergency_contact_number', 11)->nullable();
 
             $table->enum('education_status', [
-                'در حال تحصیل',
-                'فارغ‌التحصیل',
-                'انصراف داده',
+                'Studying',
+                'Graduated',
+                'Dropped'
             ])->nullable();
 
             $table->enum('marital_status', [
-                'مجرد',
-                'متأهل'
+                'Single',
+                'Married'
             ])->nullable();
 
             $table->string('identity_document');

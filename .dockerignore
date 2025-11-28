@@ -1,0 +1,62 @@
+# Dependencies
+node_modules
+vendor
+npm-debug.log
+yarn-error.log
+
+# Build files
+public/admin
+public/build
+public/hot
+public/storage
+storage/*.key
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Documentation
+README.md
+*.md
+
+# Data folder (فایل‌های بزرگ)
+Data/
+
+# Tests
+tests
+phpunit.xml
+.phpunit.result.cache
+
+# Environment
+.env
+.env.backup
+.env.production
+
+# Cache
+bootstrap/cache/*
+!bootstrap/cache/.gitignore
+
+# Logs
+*.log
+

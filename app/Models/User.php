@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -22,7 +23,6 @@ class User extends Authenticatable
         'user_name',
         'email',
         'password',
-        'profile_completed',
         'phone',
     ];
 
@@ -37,6 +37,16 @@ class User extends Authenticatable
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'profile_completed',
+        'profile_accepted',
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -46,9 +56,35 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'profile_completed' => 'boolean',
             'phone' => 'string',
         ];
+    }
+
+    /**
+     * Get profile_completed from View (based on active information record)
+     */
+    /**
+     * Get profile_completed from View (based on active information record)
+     */
+    public function getProfileCompletedAttribute(): bool
+    {
+        $status = DB::table('user_profile_status')
+            ->where('user_id', $this->id)
+            ->first();
+        
+        return $status ? (bool) $status->profile_completed : false;
+    }
+
+    /**
+     * Get profile_accepted from View (based on active information record)
+     */
+    public function getProfileAcceptedAttribute(): bool
+    {
+        $status = DB::table('user_profile_status')
+            ->where('user_id', $this->id)
+            ->first();
+        
+        return $status ? (bool) $status->profile_accepted : false;
     }
 
     public function workLogs()
