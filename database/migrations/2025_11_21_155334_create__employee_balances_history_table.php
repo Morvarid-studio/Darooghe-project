@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('total_received', 10, 2);
             $table->decimal('balance', 10, 2);
             $table->date('month'); // اولین روز آن ماه
-            $table->timestamp();
+            $table->timestamps();
         });
 
     }
