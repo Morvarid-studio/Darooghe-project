@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Worklog;
+use App\Helpers\DateHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Morilog\Jalali\Jalalian;
@@ -18,7 +19,7 @@ class WorkLogController extends Controller
 
         $validated = $request->validate([
             'worklogs' => 'required|array|min:1',
-            'worklogs.*.work_date' => 'required|date',
+            'worklogs.*.work_date' => 'required|string', // دریافت به صورت شمسی
             'worklogs.*.work_hours' => 'required|numeric|min:0|max:24',
             'worklogs.*.description' => 'nullable|string|max:255',
         ]);
@@ -27,9 +28,19 @@ class WorkLogController extends Controller
         $threeDaysAgo = now()->subDays(3)->startOfDay();
 
         foreach ($validated['worklogs'] as $entry) {
+            // اعتبارسنجی تاریخ شمسی
+            if (!DateHelper::isValidShamsiDate($entry['work_date'])) {
+                return response()->json([
+                    'message' => 'تاریخ نامعتبر است. فرمت صحیح: Y/m/d (مثلاً 1403/07/15)',
+                    'invalid_date' => $entry['work_date']
+                ], 422);
+            }
+
+            // تبدیل تاریخ شمسی به میلادی
+            $miladiDate = DateHelper::shamsiToMiladi($entry['work_date']);
 
             // جلوگیری از ثبت ساعات کاری قدیمی‌تر از سه روز قبل
-            if (Carbon::parse($entry['work_date']) < $threeDaysAgo) {
+            if (Carbon::parse($miladiDate) < $threeDaysAgo) {
                 return response()->json([
                     'message' => 'ثبت ساعات کاری برای روزهای قدیمی‌تر از سه روز قبل مجاز نیست.',
                     'invalid_date' => $entry['work_date']
@@ -38,7 +49,7 @@ class WorkLogController extends Controller
 
             $records[] = [
                 'user_id' => $user->id,
-                'work_date' => $entry['work_date'],
+                'work_date' => $miladiDate, // ذخیره به صورت میلادی
                 'work_hours' => $entry['work_hours'],
                 'description' => $entry['description'] ?? null,
                 'archived' => false,
@@ -49,9 +60,19 @@ class WorkLogController extends Controller
 
         Worklog::insert($records);
 
+        // تبدیل تاریخ‌های میلادی به شمسی برای ارسال به کلاینت
+        $responseData = [];
+        foreach ($records as $record) {
+            $responseData[] = [
+                'work_date' => (string) DateHelper::miladiToShamsi($record['work_date']),
+                'work_hours' => $record['work_hours'],
+                'description' => $record['description'],
+            ];
+        }
+
         return response()->json([
             'message' => 'رکوردها با موفقیت ثبت شدند.',
-            'data' => $records,
+            'data' => $responseData,
         ]);
     }
 
@@ -67,6 +88,13 @@ class WorkLogController extends Controller
             ->active()
             ->orderBy('work_date', 'desc')
             ->get();
+
+        // تبدیل تاریخ‌های میلادی به شمسی برای ارسال به کلاینت
+        $worklogs->transform(function ($worklog) {
+            // تبدیل به شمسی و اطمینان از اینکه string هست
+            $worklog->work_date = (string) DateHelper::miladiToShamsi($worklog->work_date);
+            return $worklog;
+        });
 
         return response()->json($worklogs);
     }
@@ -94,6 +122,9 @@ class WorkLogController extends Controller
         $record->archived = true;
         $record->save();
 
+        // تبدیل تاریخ میلادی به شمسی برای ارسال به کلاینت
+        $record->work_date = DateHelper::miladiToShamsi($record->work_date);
+
         return response()->json([
             'message' => 'رکورد با موفقیت آرشیو شد.',
             'data' => $record,
@@ -113,6 +144,9 @@ class WorkLogController extends Controller
 
         $record->archived = false;
         $record->save();
+
+        // تبدیل تاریخ میلادی به شمسی برای ارسال به کلاینت
+        $record->work_date = DateHelper::miladiToShamsi($record->work_date);
 
         return response()->json([
             'message' => 'رکورد بازیابی شد.',

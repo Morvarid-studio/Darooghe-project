@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Information;
+use App\Helpers\DateHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -19,7 +20,7 @@ class InformationController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
             'address'    => 'required|string',
-            'birthday'   => 'required|date',
+            'birthday'   => 'required|string', // دریافت به صورت شمسی
             'gender'     => 'required|in:Male,Female',
             'military'   => 'required|string',
             'degree'     => 'required|in:Diploma,Associate,Bachelor,Master,PhD',
@@ -35,6 +36,16 @@ class InformationController extends Controller
             'identity_document' => 'nullable|string|max:255',
         ]);
 
+        // اعتبارسنجی و تبدیل تاریخ شمسی به میلادی
+        if (!DateHelper::isValidShamsiDate($validated['birthday'])) {
+            return response()->json([
+                'message' => 'تاریخ تولد نامعتبر است. فرمت صحیح: Y/m/d (مثلاً 1403/07/15)'
+            ], 422);
+        }
+
+        // تبدیل تاریخ شمسی به میلادی برای ذخیره در دیتابیس
+        $validated['birthday'] = DateHelper::shamsiToMiladi($validated['birthday']);
+
         $validated['user_id'] = Auth::id();
         $validated['archive'] = false; // تنظیم archive به false
 
@@ -48,6 +59,9 @@ class InformationController extends Controller
         }
 
         $information = Information::create($validated);
+
+        // تبدیل تاریخ میلادی به شمسی برای ارسال به کلاینت
+        $information->birthday = DateHelper::miladiToShamsi($information->birthday);
 
         return response()->json([
             'message' => 'اطلاعات با موفقیت ثبت شد.',
@@ -69,6 +83,9 @@ class InformationController extends Controller
             return response()->json(['message' => 'اطلاعات یافت نشد.'], 404);
         }
 
+        // تبدیل تاریخ میلادی به شمسی برای ارسال به کلاینت
+        $information->birthday = DateHelper::miladiToShamsi($information->birthday);
+
         return response()->json($information);
     }
 
@@ -87,7 +104,7 @@ class InformationController extends Controller
             'first_name' => 'sometimes|required|string|max:255',
             'last_name'  => 'sometimes|required|string|max:255',
             'address'    => 'sometimes|required|string',
-            'birthday'   => 'sometimes|required|date',
+            'birthday'   => 'sometimes|required|string', // دریافت به صورت شمسی
             'gender'     => 'sometimes|required|in:Male,Female',
             'military'   => 'sometimes|required|string',
             'degree'     => 'sometimes|required|in:Diploma,Associate,Bachelor,Master,PhD',
@@ -112,6 +129,17 @@ class InformationController extends Controller
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'identity_document' => 'nullable|string|max:255',
         ]);
+
+        // اعتبارسنجی و تبدیل تاریخ شمسی به میلادی (اگر birthday ارسال شده باشد)
+        if (isset($validated['birthday'])) {
+            if (!DateHelper::isValidShamsiDate($validated['birthday'])) {
+                return response()->json([
+                    'message' => 'تاریخ تولد نامعتبر است. فرمت صحیح: Y/m/d (مثلاً 1403/07/15)'
+                ], 422);
+            }
+            // تبدیل تاریخ شمسی به میلادی برای ذخیره در دیتابیس
+            $validated['birthday'] = DateHelper::shamsiToMiladi($validated['birthday']);
+        }
 
 
 
@@ -149,6 +177,9 @@ class InformationController extends Controller
 
 
         $newInfo = Information::create($newData);
+
+        // تبدیل تاریخ میلادی به شمسی برای ارسال به کلاینت
+        $newInfo->birthday = DateHelper::miladiToShamsi($newInfo->birthday);
 
         return response()->json([
             'message' => 'اطلاعات جدید ثبت و نسخه قبلی آرشیو شد.',
