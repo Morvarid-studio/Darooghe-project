@@ -5,6 +5,7 @@ use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InformationController;
 use App\Http\Controllers\WorklogController;
+use App\Http\Controllers\AdminController;
 
 
 Route::post('/register', [AuthController::class, 'registerPost'])
@@ -17,6 +18,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('api_information'); // ثبت اطلاعات کاربر
     Route::get('/dashboard/information', [InformationController::class, 'show'])
         ->name('api_information'); //برگرداندن اطلاعات کاربر
+    Route::get('/dashboard/information/latest', [InformationController::class, 'getLatest'])
+        ->name('api_information_latest'); // دریافت آخرین اطلاعات کاربر (برای فرم تکمیل اطلاعات)
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('api_logout');// خروج کاربر
     Route::post('/dashboard/update_auth', [AuthController::class, 'update'])
@@ -54,6 +57,18 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('transactions_archive'); // آرشیو تراکنش کاربر توسط خود کاربر
     Route::patch('/dashboard/transactions/restore', [TransactionController::class, 'restore'])
         ->name('transactions_restore'); //بازیابی تراکنش کاربر توسط خود کاربر
+
+    // ✅ Route‌های Admin (نیاز به نقش Admin دارند)
+    Route::middleware('admin')->prefix('admin')->group(function () {
+        Route::get('/pending-profiles', [AdminController::class, 'getPendingProfiles'])
+            ->name('admin_pending_profiles'); // لیست اطلاعات تایید نشده
+        Route::get('/profiles/{userId}', [AdminController::class, 'getUserProfile'])
+            ->name('admin_user_profile'); // جزئیات اطلاعات یک کاربر
+        Route::post('/profiles/{userId}/approve', [AdminController::class, 'approveProfile'])
+            ->name('admin_approve_profile'); // تایید اطلاعات کاربر
+        Route::post('/profiles/{userId}/reject', [AdminController::class, 'rejectProfile'])
+            ->name('admin_reject_profile'); // رد اطلاعات کاربر
+    });
 });
 
 

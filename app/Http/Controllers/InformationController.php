@@ -48,6 +48,7 @@ class InformationController extends Controller
 
         $validated['user_id'] = Auth::id();
         $validated['archive'] = false; // تنظیم archive به false
+        $validated['profile_accepted'] = false; // اطلاعات جدید باید تایید شوند
 
         // آپلود فایل‌ها در صورت وجود
         if ($request->hasFile('resume')) {
@@ -70,7 +71,7 @@ class InformationController extends Controller
     }
 
     /**
-     * نمایش اطلاعات کاربر لاگین شده
+     * نمایش اطلاعات کاربر لاگین شده (فقط اطلاعات فعال)
      */
     public function show()
     {
@@ -90,13 +91,59 @@ class InformationController extends Controller
     }
 
     /**
+     * دریافت آخرین اطلاعات کاربر (برای استفاده در فرم تکمیل اطلاعات)
+     * این متد آخرین اطلاعات را برمی‌گرداند (چه تایید شده، چه رد شده، چه آرشیو شده)
+     */
+    public function getLatest()
+    {
+        $user = Auth::user();
+        $information = Information::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (!$information) {
+            return response()->json([
+                'message' => 'اطلاعات یافت نشد.',
+                'data' => null
+            ]);
+        }
+
+        // تاریخ میلادی را به همان صورت برگردان (برای استفاده در date picker که میلادی می‌خواهد)
+        // تاریخ در دیتابیس به صورت میلادی ذخیره شده است
+
+        // اضافه کردن URL فایل‌ها
+        $request = request();
+        $scheme = $request->getScheme();
+        $host = $request->getHost();
+        $port = $request->getPort();
+        if (!$port || ($port == 80 && $scheme == 'http') || ($port == 443 && $scheme == 'https')) {
+            $port = 8080;
+        }
+        $baseUrl = $scheme . '://' . $host . ':' . $port;
+
+        if ($information->profile_photo) {
+            $storagePath = '/storage/' . $information->profile_photo;
+            $information->profile_photo_url = $baseUrl . $storagePath;
+        }
+        if ($information->resume) {
+            $storagePath = '/storage/' . $information->resume;
+            $information->resume_url = $baseUrl . $storagePath;
+        }
+
+        return response()->json([
+            'message' => 'آخرین اطلاعات کاربر',
+            'data' => $information
+        ]);
+    }
+
+    /**
      * بروزرسانی اطلاعات موجود
      */
     public function update(Request $request)
     {
-        // 1) گرفتن رکورد فعلی فعال
+        // 1) گرفتن آخرین رکورد (چه آرشیو شده، چه نشده) برای استفاده از فایل‌های قبلی
         $oldInfo = Information::where('user_id', auth()->id())
-            ->where('archive', false)
+            ->orderBy('created_at', 'desc')
             ->first();
 
         // 2) اعتبارسنجی ورودی‌ها
@@ -167,12 +214,19 @@ class InformationController extends Controller
         }
 
 
+        // آپلود فایل‌های جدید یا استفاده از فایل‌های قبلی
         if ($request->hasFile('resume')) {
             $newData['resume'] = $request->file('resume')->store('resumes', 'public');
+        } elseif ($oldInfo && $oldInfo->resume) {
+            // اگر فایل جدیدی آپلود نشده، از فایل قبلی استفاده کن
+            $newData['resume'] = $oldInfo->resume;
         }
 
         if ($request->hasFile('profile_photo')) {
             $newData['profile_photo'] = $request->file('profile_photo')->store('profiles', 'public');
+        } elseif ($oldInfo && $oldInfo->profile_photo) {
+            // اگر فایل جدیدی آپلود نشده، از فایل قبلی استفاده کن
+            $newData['profile_photo'] = $oldInfo->profile_photo;
         }
 
 

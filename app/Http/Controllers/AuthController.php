@@ -25,7 +25,8 @@ class AuthController extends Controller
         $user = User::create([
             'user_name' => $request->user_name,
             'email' => $request->email,
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
+            'role' => 'user' // نقش پیش‌فرض برای کاربران جدید
         ]);
 
         // ایجاد توکن بلافاصله بعد از ثبت‌نام

@@ -24,6 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'phone',
+        'role',
     ];
 
     /**
@@ -58,6 +59,14 @@ class User extends Authenticatable
             'password' => 'hashed',
             'phone' => 'string',
         ];
+    }
+
+    /**
+     * بررسی اینکه آیا کاربر Admin است یا نه
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 
     /**

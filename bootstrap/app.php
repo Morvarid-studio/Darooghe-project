@@ -40,6 +40,11 @@ return Application::configure(basePath: dirname(__DIR__))
             //\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, جهت جلوگیری از ارور CRTF
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
+
+        // ✅ ثبت Middleware برای بررسی نقش Admin
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -31,6 +31,7 @@ class Information extends Model
         'languages',
         'identity_document',
         'profile_accepted',
+        'rejection_reason',
         'archive',
     ];
     public function user()
