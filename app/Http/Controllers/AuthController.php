@@ -22,12 +22,23 @@ class AuthController extends Controller
 
         ]);
 
+        // پیدا کردن role پیش‌فرض (user)
+        $defaultRole = \App\Models\Role::where('name', 'user')->first();
+        if (!$defaultRole) {
+            return response()->json([
+                'message' => 'Role پیش‌فرض یافت نشد. لطفاً با مدیر سیستم تماس بگیرید.'
+            ], 500);
+        }
+
         $user = User::create([
             'user_name' => $request->user_name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'user' // نقش پیش‌فرض برای کاربران جدید
+            'role_id' => $defaultRole->id // نقش پیش‌فرض برای کاربران جدید
         ]);
+
+        // Load role relationship
+        $user->load('role');
 
         // ایجاد توکن بلافاصله بعد از ثبت‌نام
         $token = $user->createToken('api_token')->plainTextToken;
@@ -54,6 +65,8 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+        // Load role relationship
+        $user->load('role');
         $token = $user->createToken('api_token')->plainTextToken;
 
         return response()->json([

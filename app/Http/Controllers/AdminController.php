@@ -173,5 +173,17 @@ class AdminController extends Controller
             'data' => $information
         ]);
     }
+
+    /**
+     * دریافت لیست تمام کاربران (برای dropdown ها)
+     */
+    public function getAllUsers(Request $request)
+    {
+        $users = User::select('id', 'user_name', 'email')
+            ->orderBy('user_name')
+            ->get();
+
+        return response()->json($users);
+    }
 }
 

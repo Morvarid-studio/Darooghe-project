@@ -17,7 +17,7 @@ class EnsureUserIsAdmin
     {
         $user = $request->user();
 
-        if (!$user || $user->role !== 'admin') {
+        if (!$user || !$user->isAdmin()) {
             return response()->json([
                 'message' => 'دسترسی غیرمجاز. فقط مدیران می‌توانند به این بخش دسترسی داشته باشند.'
             ], 403);

@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,7 @@ class User extends Authenticatable
         'email',
         'password',
         'phone',
-        'role',
+        'role_id',
     ];
 
     /**
@@ -62,11 +63,19 @@ class User extends Authenticatable
     }
 
     /**
+     * رابطه با Role
+     */
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    /**
      * بررسی اینکه آیا کاربر Admin است یا نه
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role && $this->role->name === 'admin';
     }
 
     /**
@@ -100,9 +109,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(WorkLog::class);
     }
+    public function accounts()
+    {
+        return $this->hasMany(Account::class);
+    }
+
+    // Alias برای سازگاری با کد قدیمی
     public function bankInfo()
     {
-        return $this->hasMany(BankInfo::class);
+        return $this->accounts();
     }
 
     public function information()

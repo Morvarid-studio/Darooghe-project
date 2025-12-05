@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PaySlip;
 use App\Models\Worklog;
 use App\Models\Information;
-use App\Models\BankInfo;
+use App\Models\Account;
 use App\Models\EmployeeBalanceHistory;
 use Illuminate\Http\Request;
 use Morilog\Jalali\Jalalian;
@@ -63,16 +63,17 @@ class PaySlipController extends Controller
             $current_balance = $balance_record ? $balance_record->balance : 0;
 
 
-            $bank = BankInfo::where('user_id', $user_id)
+            $account = Account::where('user_id', $user_id)
                 ->where('is_active', true)
+                ->where('account_type', 'employee')
                 ->orderBy('id', 'desc')
                 ->first();
 
-            if (!$bank) {
+            if (!$account) {
                 return response()->json(['error' => 'اطلاعات بانکی فعالی یافت نشد'], 422);
             }
 
-            $bankinfo_string = $bank->bank_name . ' - ' . $bank->card_number;
+            $bankinfo_string = $account->bank_name . ' - ' . ($account->account_number ?? '');
 
             $payment_amount = $request->payment_amount;
 

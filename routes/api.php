@@ -1,7 +1,12 @@
 <?php
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\BankInfoController;
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\CompanyAccountController;
+use App\Http\Controllers\AccountCategoryController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PettyCashController;
+use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InformationController;
 use App\Http\Controllers\WorklogController;
@@ -42,12 +47,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/worklogs/last_seven_days', [WorklogController::class, 'LastSevenDaysWorkHours'])
         ->name('worklogs_last_seven_days_report');
 
-    Route::post('/bankinfo', [BankInfoController::class, 'store'])
-        ->name('bankinfo_store');
-    Route::get('/bankinfo', [BankInfoController::class, 'show'])
-        ->name('bankinfo_show');
-    Route::post('/bankinfo', [BankInfoController::class, 'update'])
-        ->name('bankinfo_update');
+    // Route‌های حساب‌ها (قبلاً bankinfo)
+    Route::get('/accounts/for-transaction', [AccountController::class, 'getAccountsForTransaction'])
+        ->name('accounts_for_transaction'); // دریافت لیست حساب‌ها برای ثبت تراکنش (با فیلتر role-based)
+    Route::post('/accounts', [AccountController::class, 'store'])
+        ->name('accounts_store'); // ثبت حساب جدید (برای کاربران عادی)
+    Route::get('/accounts', [AccountController::class, 'show'])
+        ->name('accounts_show'); // دریافت حساب‌های کاربر
+    Route::post('/accounts/update', [AccountController::class, 'update'])
+        ->name('accounts_update'); // به‌روزرسانی حساب کاربر
 
     Route::post('/dashboard/transactions', [TransactionController::class, 'store'])
         ->name('transactions_store'); //ثبت تراکنش
@@ -57,6 +65,16 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('transactions_archive'); // آرشیو تراکنش کاربر توسط خود کاربر
     Route::patch('/dashboard/transactions/restore', [TransactionController::class, 'restore'])
         ->name('transactions_restore'); //بازیابی تراکنش کاربر توسط خود کاربر
+
+    // Route‌های مدیریت حساب تنخواه (برای کاربران عادی)
+    Route::get('/petty-cash/account', [PettyCashController::class, 'getMyPettyCashAccount'])
+        ->name('petty_cash_account'); // دریافت حساب تنخواه کاربر
+    Route::get('/petty-cash/transactions', [PettyCashController::class, 'getMyPettyCashTransactions'])
+        ->name('petty_cash_transactions'); // دریافت تراکنش‌های حساب تنخواه
+    Route::post('/petty-cash/transactions', [PettyCashController::class, 'storeTransaction'])
+        ->name('petty_cash_store_transaction'); // ثبت تراکنش برای حساب تنخواه
+    Route::get('/petty-cash/balance', [PettyCashController::class, 'getMyPettyCashBalance'])
+        ->name('petty_cash_balance'); // دریافت موجودی حساب تنخواه
 
     // ✅ Route‌های Admin (نیاز به نقش Admin دارند)
     Route::middleware('admin')->prefix('admin')->group(function () {
@@ -68,7 +86,69 @@ Route::middleware('auth:sanctum')->group(function () {
             ->name('admin_approve_profile'); // تایید اطلاعات کاربر
         Route::post('/profiles/{userId}/reject', [AdminController::class, 'rejectProfile'])
             ->name('admin_reject_profile'); // رد اطلاعات کاربر
+        
+        // Route‌های داشبورد مالی حساب اصلی شرکت
+        Route::get('/company-account/transactions', [CompanyAccountController::class, 'getCompanyTransactions'])
+            ->name('admin_company_transactions'); // دریافت تراکنش‌های حساب اصلی
+        Route::post('/company-account/transactions', [CompanyAccountController::class, 'storeTransaction'])
+            ->name('admin_company_store_transaction'); // ثبت تراکنش برای حساب اصلی
+        Route::patch('/company-account/transactions/{id}/archive', [CompanyAccountController::class, 'archiveTransaction'])
+            ->name('admin_company_archive_transaction'); // آرشیو کردن تراکنش حساب اصلی
+        Route::get('/company-account/balance', [CompanyAccountController::class, 'getCompanyBalance'])
+            ->name('admin_company_balance'); // دریافت موجودی حساب اصلی
+        
+        // Route‌های مدیریت دسته‌بندی حساب‌ها
+        Route::get('/account-categories', [AccountCategoryController::class, 'index'])
+            ->name('admin_account_categories_index'); // دریافت لیست دسته‌بندی‌ها
+        Route::post('/account-categories', [AccountCategoryController::class, 'store'])
+            ->name('admin_account_categories_store'); // ایجاد دسته‌بندی جدید
+        Route::put('/account-categories/{id}', [AccountCategoryController::class, 'update'])
+            ->name('admin_account_categories_update'); // به‌روزرسانی دسته‌بندی
+        Route::post('/account-categories/{id}/sync-roles', [AccountCategoryController::class, 'syncRoles'])
+            ->name('admin_account_categories_sync_roles'); // sync کردن نقش‌های دسته‌بندی
+        Route::delete('/account-categories/{id}', [AccountCategoryController::class, 'destroy'])
+            ->name('admin_account_categories_destroy'); // حذف دسته‌بندی
+        
+        // Route‌های مدیریت حساب‌ها (برای Admin)
+        Route::get('/accounts', [AccountController::class, 'index'])
+            ->name('admin_accounts_index'); // دریافت لیست همه حساب‌ها با فیلتر
+        Route::post('/accounts', [AccountController::class, 'storeAdmin'])
+            ->name('admin_accounts_store'); // ایجاد حساب جدید توسط Admin
+        Route::post('/accounts/{id}/sync-roles', [AccountController::class, 'syncRoles'])
+            ->name('admin_accounts_sync_roles'); // sync کردن نقش‌های حساب
+        Route::patch('/accounts/{id}/archive', [AccountController::class, 'archive'])
+            ->name('admin_accounts_archive'); // آرشیو کردن حساب
+        
+        // Route‌های مدیریت تگ‌ها (برای Admin)
+        Route::get('/tags', [TagController::class, 'index'])
+            ->name('admin_tags_index'); // دریافت لیست تگ‌ها
+        Route::post('/tags', [TagController::class, 'store'])
+            ->name('admin_tags_store'); // ایجاد تگ جدید
+        Route::put('/tags/{id}', [TagController::class, 'update'])
+            ->name('admin_tags_update'); // به‌روزرسانی تگ
+        Route::delete('/tags/{id}', [TagController::class, 'destroy'])
+            ->name('admin_tags_destroy'); // حذف تگ
+        
+        // Route‌های مدیریت Role ها (برای Admin)
+        Route::get('/roles', [RoleController::class, 'index'])
+            ->name('admin_roles_index'); // دریافت لیست role ها
+        Route::get('/roles/{id}', [RoleController::class, 'show'])
+            ->name('admin_roles_show'); // دریافت یک role خاص
+        Route::post('/roles', [RoleController::class, 'store'])
+            ->name('admin_roles_store'); // ایجاد role جدید
+        Route::put('/roles/{id}', [RoleController::class, 'update'])
+            ->name('admin_roles_update'); // به‌روزرسانی role
+        Route::delete('/roles/{id}', [RoleController::class, 'destroy'])
+            ->name('admin_roles_destroy'); // حذف (غیرفعال کردن) role
+        
+        // Route برای دریافت لیست کاربران
+        Route::get('/users', [AdminController::class, 'getAllUsers'])
+            ->name('admin_users_list'); // دریافت لیست تمام کاربران
     });
+    
+    // Route عمومی برای دریافت لیست role ها (برای dropdown ها)
+    Route::get('/roles', [RoleController::class, 'index'])
+        ->name('roles_index');
 });
 
 

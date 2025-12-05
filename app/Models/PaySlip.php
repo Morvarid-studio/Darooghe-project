@@ -28,9 +28,15 @@ class PaySlip extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function account()
+    {
+        return $this->belongsTo(Account::class, 'bankinfo_id');
+    }
+
+    // Alias برای سازگاری با کد قدیمی
     public function bankInfo()
     {
-        return $this->belongsTo(BankInfo::class, 'bankinfo_id');
+        return $this->account();
     }
 
     public function baseSalaryInfo()
