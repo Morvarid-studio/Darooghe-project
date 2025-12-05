@@ -1,20 +1,15 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        // SQLite از MySQL Events پشتیبانی نمی‌کند
-        // این migration فقط برای MySQL اجرا می‌شود
         $driver = DB::getDriverName();
         
         if ($driver !== 'sqlite') {
-            // فقط برای MySQL و سایر دیتابیس‌هایی که Events را پشتیبانی می‌کنند
             DB::statement("
             CREATE EVENT IF NOT EXISTS monthly_balance_snapshot
             ON SCHEDULE EVERY 1 MONTH
@@ -25,31 +20,23 @@ return new class extends Migration
                     (user_id, total_costs, total_received, balance, month, created_at, updated_at)
                 SELECT
                     u.id AS user_id,
-
-            -- هزینه‌هایی که از حساب کاربر کم شده
-                    COALESCE(SUM(CASE WHEN t.from_account = b.id THEN t.amount_decimal ELSE 0 END),0) AS total_costs,
-
-                    -- دریافتی‌هایی که به حساب کاربر واریز شده
-                    COALESCE(SUM(CASE WHEN t.to_account = b.id THEN t.amount_decimal ELSE 0 END),0) AS total_received,
-
-                    -- مانده حساب
-                    COALESCE(SUM(CASE WHEN t.to_account = b.id THEN t.amount_decimal ELSE 0 END),0)
-                    - COALESCE(SUM(CASE WHEN t.from_account = b.id THEN t.amount_decimal ELSE 0 END),0) AS balance,
-
+                    COALESCE(SUM(CASE WHEN t.from_account_id = a.id THEN t.amount_decimal ELSE 0 END),0) AS total_costs,
+                    COALESCE(SUM(CASE WHEN t.to_account_id = a.id THEN t.amount_decimal ELSE 0 END),0) AS total_received,
+                    COALESCE(SUM(CASE WHEN t.to_account_id = a.id THEN t.amount_decimal ELSE 0 END),0)
+                    - COALESCE(SUM(CASE WHEN t.from_account_id = a.id THEN t.amount_decimal ELSE 0 END),0) AS balance,
                     DATE_FORMAT(NOW() - INTERVAL 1 MONTH, '%Y-%m-01') AS month,
                     NOW(),
                     NOW()
             FROM users u
-            LEFT JOIN bank_infos b ON b.user_id = u.id AND b.is_active = true
+            LEFT JOIN accounts a ON a.user_id = u.id AND a.is_active = true
             LEFT JOIN transactions t
-                ON t.from_account = b.id OR t.to_account = b.id
+                ON t.from_account_id = a.id OR t.to_account_id = a.id
             WHERE t.created_at >= DATE_FORMAT(NOW() - INTERVAL 1 MONTH, '%Y-%m-01')
             AND t.created_at < DATE_FORMAT(NOW(), '%Y-%m-01')
             GROUP BY u.id;
             END;
                 ");
         }
-        // برای SQLite (در تست‌ها) این migration را skip می‌کنیم
     }
 
     public function down(): void

@@ -15,15 +15,15 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users');
             $table->date('payment_date');
-            $table->decimal('amount_decimal', 18, 2); //میزان پرداختی
-            $table->string('amount_string');
-            $table->string('category'); // ????
-            $table->string('type', 255); //نوع پرداخت برای اینکه در سیستم مالی به مشکل بر نخوریم باید تنها دو حالت بفرستد cost & receive
-            $table->string('handled_by'); //توسط چه کسی
-            $table->string('from_account'); //از چه حسابی
-            $table->string('to_account'); // برای چه حسابی
-            $table->string('description');
-            $table->string('invoice')->nullable();//فاکتور
+            $table->decimal('amount_decimal', 18, 2);
+            $table->string('category');
+            $table->string('handled_by');
+            $table->foreignId('from_account_id')
+                ->constrained('accounts')->onDelete('restrict');
+            $table->foreignId('to_account_id')
+                ->constrained('accounts')->onDelete('restrict');
+            $table->string('description')->nullable();
+            $table->string('invoice')->nullable();
             $table->boolean('archived')->default(false);
             $table->timestamps();
         });

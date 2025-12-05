@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -17,6 +18,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->foreignId('role_id')->default(2)
+                ->constrained('roles')->onDelete('restrict');
             $table->rememberToken();
             $table->timestamps();
         });
@@ -42,9 +45,40 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
+        // Drop foreign key constraints first if they exist
+        $tablesWithUserForeignKey = [
+            'employee_balances_history',
+            'transactions',
+            'pay_slips',
+            'information',
+            'worklogs',
+            'sessions'
+        ];
+        
+        foreach ($tablesWithUserForeignKey as $tableName) {
+            if (Schema::hasTable($tableName) && Schema::hasColumn($tableName, 'user_id')) {
+                try {
+                    // Try to get foreign key constraint name and drop it
+                    $foreignKeys = DB::select("
+                        SELECT CONSTRAINT_NAME 
+                        FROM information_schema.KEY_COLUMN_USAGE 
+                        WHERE TABLE_SCHEMA = DATABASE() 
+                        AND TABLE_NAME = ? 
+                        AND COLUMN_NAME = 'user_id'
+                        AND REFERENCED_TABLE_NAME IS NOT NULL
+                    ", [$tableName]);
+                    
+                    foreach ($foreignKeys as $fk) {
+                        DB::statement("ALTER TABLE `{$tableName}` DROP FOREIGN KEY `{$fk->CONSTRAINT_NAME}`");
+                    }
+                } catch (\Exception $e) {
+                    // Foreign key might not exist or already dropped, continue
+                }
+            }
+        }
+        
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
-
 };

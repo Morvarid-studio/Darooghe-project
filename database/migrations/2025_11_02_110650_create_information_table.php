@@ -1,4 +1,4 @@
-1<?php
+<?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-
     public function up(): void
     {
         Schema::create('information', function (Blueprint $table) {
@@ -41,17 +40,18 @@ return new class extends Migration
                 'Married'
             ])->nullable();
 
-            $table->string('identity_document');
-            $table->string('resume')->nullable(); // مسیر فایل
+            $table->string('identity_document')->nullable();
+            $table->string('resume')->nullable();
             $table->string('profile_photo')->nullable();
             $table->text('profession')->nullable();
             $table->text('languages')->nullable();
             $table->boolean('archive')->default(true);
+            $table->boolean('profile_accepted')->default(false);
+            $table->text('rejection_reason')->nullable();
             $table->Decimal('base_salary', 12, 2)->default(0);
             $table->timestamps();
         });
     }
-
 
     /**
      * Reverse the migrations.
