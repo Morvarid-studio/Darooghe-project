@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\AccountTag;
+use App\Models\Transaction;
+use App\Helpers\DateHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class AccountController extends Controller
 {
@@ -287,6 +290,253 @@ class AccountController extends Controller
         return response()->json([
             'message' => 'نقش‌های حساب با موفقیت به‌روزرسانی شد.',
             'data' => $account->load(['tags', 'user'])
+        ]);
+    }
+
+    /**
+     * دریافت اطلاعات یک حساب خاص (برای داشبورد حساب)
+     */
+    public function showAccount(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        if (!$user->isAdmin()) {
+            return response()->json([
+                'message' => 'دسترسی غیرمجاز.'
+            ], 403);
+        }
+
+        $account = Account::with(['tags', 'user'])
+            ->findOrFail($id);
+
+        $account->allowed_roles = $account->getAllowedRoles();
+
+        return response()->json($account);
+    }
+
+    /**
+     * دریافت تراکنش‌های یک حساب خاص
+     */
+    public function getAccountTransactions(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        if (!$user->isAdmin()) {
+            return response()->json([
+                'message' => 'دسترسی غیرمجاز.'
+            ], 403);
+        }
+
+        $account = Account::findOrFail($id);
+
+        // دریافت تراکنش‌هایی که از این حساب خرج شده یا به این حساب وارد شده
+        $transactions = Transaction::with(['fromAccount', 'toAccount', 'user'])
+            ->where(function($q) use ($account) {
+                $q->where('from_account_id', $account->id)
+                  ->orWhere('to_account_id', $account->id);
+            })
+            ->active()
+            ->orderBy('payment_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // تبدیل تاریخ‌های میلادی به شمسی و اضافه کردن type
+        $transactions->transform(function ($transaction) use ($account) {
+            // تبدیل payment_date به string شمسی (فقط تاریخ بدون timestamp)
+            $paymentDate = $transaction->payment_date;
+            if ($paymentDate instanceof \Carbon\Carbon) {
+                $paymentDate = $paymentDate->format('Y-m-d');
+            }
+            $transaction->payment_date = DateHelper::miladiToShamsi($paymentDate, 'Y/m/d');
+            
+            // تبدیل created_at به string شمسی (فقط تاریخ بدون timestamp)
+            $createdAt = $transaction->created_at;
+            if ($createdAt instanceof \Carbon\Carbon) {
+                $createdAt = $createdAt->format('Y-m-d');
+            }
+            $transaction->created_at_shamsi = DateHelper::miladiToShamsi($createdAt, 'Y/m/d');
+            
+            // محاسبه type به صورت خودکار
+            if ($transaction->from_account_id == $account->id) {
+                $transaction->type = 'cost';
+            } else {
+                $transaction->type = 'receive';
+            }
+            
+            return $transaction;
+        });
+
+        return response()->json([
+            'account' => $account,
+            'transactions' => $transactions
+        ]);
+    }
+
+    /**
+     * دریافت موجودی یک حساب خاص
+     */
+    public function getAccountBalance(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        if (!$user->isAdmin()) {
+            return response()->json([
+                'message' => 'دسترسی غیرمجاز.'
+            ], 403);
+        }
+
+        $account = Account::findOrFail($id);
+
+        // محاسبه موجودی از تراکنش‌ها
+        $totalReceived = Transaction::where('to_account_id', $account->id)
+            ->where('archived', false)
+            ->sum('amount_decimal');
+
+        $totalCosts = Transaction::where('from_account_id', $account->id)
+            ->where('archived', false)
+            ->sum('amount_decimal');
+
+        $balance = $totalReceived - $totalCosts;
+
+        return response()->json([
+            'account' => $account,
+            'total_received' => $totalReceived,
+            'total_costs' => $totalCosts,
+            'balance' => $balance
+        ]);
+    }
+
+    /**
+     * ثبت تراکنش برای یک حساب خاص
+     */
+    public function storeAccountTransaction(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        if (!$user->isAdmin()) {
+            return response()->json([
+                'message' => 'دسترسی غیرمجاز. فقط مدیران می‌توانند تراکنش ثبت کنند.'
+            ], 403);
+        }
+
+        $account = Account::findOrFail($id);
+
+        $validated = $request->validate([
+            'payment_date' => 'required|string', // دریافت به صورت شمسی
+            'amount_decimal' => 'required|numeric|min:0',
+            'category' => 'required|string',
+            'from_account_id' => 'required|exists:accounts,id',
+            'to_account_id' => 'required|exists:accounts,id',
+            'description' => 'nullable|string',
+            'invoice' => 'file|mimes:pdf,doc,docx|max:2048|nullable',
+        ]);
+
+        // بررسی اینکه یکی از حساب‌ها باید حساب مورد نظر باشد
+        if ($validated['from_account_id'] != $account->id && $validated['to_account_id'] != $account->id) {
+            return response()->json([
+                'message' => 'یکی از حساب‌های مبدا یا مقصد باید حساب مورد نظر باشد.'
+            ], 422);
+        }
+
+        // اعتبارسنجی و تبدیل تاریخ شمسی به میلادی
+        if (!DateHelper::isValidShamsiDate($validated['payment_date'])) {
+            return response()->json([
+                'message' => 'تاریخ پرداخت نامعتبر است. فرمت صحیح: Y/m/d (مثلاً 1403/07/15)'
+            ], 422);
+        }
+
+        // تبدیل تاریخ شمسی به میلادی برای ذخیره در دیتابیس
+        $validated['payment_date'] = DateHelper::shamsiToMiladi($validated['payment_date']);
+
+        $validated['user_id'] = $user->id; // ثبت‌کننده
+        $validated['handled_by'] = $user->user_name;
+        $validated['archived'] = false;
+
+        $validated['invoice'] = null;
+        if ($request->hasFile('invoice')) {
+            $validated['invoice'] = $request->file('invoice')->store('invoices', 'public');
+        }
+
+        $transaction = Transaction::create($validated);
+
+        // تبدیل تاریخ میلادی به شمسی برای ارسال به کلاینت (فقط تاریخ بدون timestamp)
+        $paymentDate = $transaction->payment_date;
+        if ($paymentDate instanceof \Carbon\Carbon) {
+            $paymentDate = $paymentDate->format('Y-m-d');
+        }
+        $transaction->payment_date = DateHelper::miladiToShamsi($paymentDate, 'Y/m/d');
+        
+        $createdAt = $transaction->created_at;
+        if ($createdAt instanceof \Carbon\Carbon) {
+            $createdAt = $createdAt->format('Y-m-d');
+        }
+        $transaction->created_at_shamsi = DateHelper::miladiToShamsi($createdAt, 'Y/m/d');
+        
+        $transaction->load(['fromAccount', 'toAccount', 'user']);
+
+        // محاسبه type به صورت خودکار
+        if ($transaction->from_account_id == $account->id) {
+            $transaction->type = 'cost';
+        } else {
+            $transaction->type = 'receive';
+        }
+
+        return response()->json([
+            'message' => 'تراکنش با موفقیت ثبت شد.',
+            'data' => $transaction
+        ], 201);
+    }
+
+    /**
+     * آرشیو کردن تراکنش یک حساب خاص
+     */
+    public function archiveTransaction(Request $request, $accountId, $transactionId)
+    {
+        $user = Auth::user();
+
+        if (!$user->isAdmin()) {
+            return response()->json([
+                'message' => 'دسترسی غیرمجاز. فقط مدیران می‌توانند تراکنش آرشیو کنند.'
+            ], 403);
+        }
+
+        $account = Account::findOrFail($accountId);
+
+        // پیدا کردن تراکنش که مربوط به حساب مورد نظر باشد
+        $transaction = Transaction::where('id', $transactionId)
+            ->where(function($q) use ($account) {
+                $q->where('from_account_id', $account->id)
+                  ->orWhere('to_account_id', $account->id);
+            })
+            ->firstOrFail();
+
+        $transaction->archived = true;
+        $transaction->save();
+        $transaction->load(['fromAccount', 'toAccount', 'user']);
+
+        // تبدیل تاریخ میلادی به شمسی برای ارسال به کلاینت
+        $paymentDate = $transaction->payment_date;
+        if ($paymentDate instanceof \Carbon\Carbon) {
+            $paymentDate = $paymentDate->format('Y-m-d');
+        }
+        $transaction->payment_date = DateHelper::miladiToShamsi($paymentDate, 'Y/m/d');
+        
+        $createdAt = $transaction->created_at;
+        if ($createdAt instanceof \Carbon\Carbon) {
+            $createdAt = $createdAt->format('Y-m-d');
+        }
+        $transaction->created_at_shamsi = DateHelper::miladiToShamsi($createdAt, 'Y/m/d');
+        
+        // محاسبه type به صورت خودکار
+        if ($transaction->from_account_id == $account->id) {
+            $transaction->type = 'cost';
+        } else {
+            $transaction->type = 'receive';
+        }
+
+        return response()->json([
+            'message' => 'تراکنش با موفقیت آرشیو شد.',
+            'data' => $transaction
         ]);
     }
 }

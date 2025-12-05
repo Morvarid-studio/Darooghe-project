@@ -114,6 +114,16 @@ Route::middleware('auth:sanctum')->group(function () {
             ->name('admin_accounts_index'); // دریافت لیست همه حساب‌ها با فیلتر
         Route::post('/accounts', [AccountController::class, 'storeAdmin'])
             ->name('admin_accounts_store'); // ایجاد حساب جدید توسط Admin
+        Route::get('/accounts/{id}', [AccountController::class, 'showAccount'])
+            ->name('admin_accounts_show'); // دریافت اطلاعات یک حساب خاص
+        Route::get('/accounts/{id}/transactions', [AccountController::class, 'getAccountTransactions'])
+            ->name('admin_accounts_transactions'); // دریافت تراکنش‌های یک حساب
+        Route::get('/accounts/{id}/balance', [AccountController::class, 'getAccountBalance'])
+            ->name('admin_accounts_balance'); // دریافت موجودی یک حساب
+        Route::post('/accounts/{id}/transactions', [AccountController::class, 'storeAccountTransaction'])
+            ->name('admin_accounts_store_transaction'); // ثبت تراکنش برای یک حساب
+        Route::patch('/accounts/{id}/transactions/{transactionId}/archive', [AccountController::class, 'archiveTransaction'])
+            ->name('admin_accounts_archive_transaction'); // آرشیو کردن تراکنش یک حساب
         Route::post('/accounts/{id}/sync-roles', [AccountController::class, 'syncRoles'])
             ->name('admin_accounts_sync_roles'); // sync کردن نقش‌های حساب
         Route::patch('/accounts/{id}/archive', [AccountController::class, 'archive'])
