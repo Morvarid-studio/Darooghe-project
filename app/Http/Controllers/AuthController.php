@@ -38,7 +38,7 @@ class AuthController extends Controller
         ]);
 
         // Load role relationship
-        $user->load('role');
+        $user->load('roleRelation');
 
         // ایجاد توکن بلافاصله بعد از ثبت‌نام
         $token = $user->createToken('api_token')->plainTextToken;
@@ -66,7 +66,7 @@ class AuthController extends Controller
 
         $user = Auth::user();
         // Load role relationship
-        $user->load('role');
+        $user->load('roleRelation');
         $token = $user->createToken('api_token')->plainTextToken;
 
         return response()->json([

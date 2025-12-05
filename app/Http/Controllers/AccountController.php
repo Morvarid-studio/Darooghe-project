@@ -29,7 +29,7 @@ class AccountController extends Controller
                 });
         } else {
             // کاربر عادی: فقط حساب‌هایی که role او در allowed_roles است + حساب خودش
-            $userRoleName = $user->role ? $user->role->name : 'user';
+            $userRoleName = $user->role ?? 'user';
             $accounts = Account::with(['tags', 'user'])
                 ->where('is_active', true)
                 ->where(function($q) use ($user, $userRoleName) {

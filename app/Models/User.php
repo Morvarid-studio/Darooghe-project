@@ -46,6 +46,7 @@ class User extends Authenticatable
     protected $appends = [
         'profile_completed',
         'profile_accepted',
+        'role',
     ];
 
     /**
@@ -62,20 +63,35 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * رابطه با Role
-     */
-    public function role(): BelongsTo
-    {
-        return $this->belongsTo(Role::class);
-    }
 
     /**
      * بررسی اینکه آیا کاربر Admin است یا نه
      */
     public function isAdmin(): bool
     {
-        return $this->role && $this->role->name === 'admin';
+        if (!$this->relationLoaded('roleRelation')) {
+            $this->load('roleRelation');
+        }
+        return $this->roleRelation && $this->roleRelation->name === 'admin';
+    }
+
+    /**
+     * Get role name as string (for JSON serialization)
+     */
+    public function getRoleAttribute(): ?string
+    {
+        if (!$this->relationLoaded('roleRelation')) {
+            $this->load('roleRelation');
+        }
+        return $this->roleRelation?->name;
+    }
+
+    /**
+     * Get role relation (to avoid conflict with accessor)
+     */
+    public function roleRelation(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'role_id');
     }
 
     /**
