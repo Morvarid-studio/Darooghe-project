@@ -15,12 +15,50 @@ return [
     |
     */
 
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
-        Sanctum::currentApplicationUrlWithPort(),
-        // Sanctum::currentRequestHost(),
-    ))),
+    'stateful' => (function () {
+        $domains = [
+            // Development domains
+            'localhost',
+            'localhost:3000',
+            'localhost:5173',
+            '127.0.0.1',
+            '127.0.0.1:8000',
+            '127.0.0.1:8090',
+            '::1',
+        ];
+        
+        // اضافه کردن دامنه از APP_URL
+        $appUrl = env('APP_URL', '');
+        if ($appUrl) {
+            $parsedUrl = parse_url($appUrl);
+            if ($parsedUrl && isset($parsedUrl['host'])) {
+                $host = $parsedUrl['host'];
+                $port = $parsedUrl['port'] ?? null;
+                
+                // اضافه کردن host
+                $domains[] = $host;
+                
+                // اگر port دارد، با port هم اضافه کن
+                if ($port) {
+                    $domains[] = $host . ':' . $port;
+                }
+            }
+        }
+        
+        // اگر متغیر محیطی تعریف شده، اضافه کن
+        $envDomains = env('SANCTUM_STATEFUL_DOMAINS', '');
+        if ($envDomains) {
+            $domains = array_merge($domains, explode(',', $envDomains));
+        }
+        
+        // اضافه کردن current application URL
+        $currentUrl = Sanctum::currentApplicationUrlWithPort();
+        if ($currentUrl) {
+            $domains[] = $currentUrl;
+        }
+        
+        return array_unique(array_filter($domains));
+    })(),
 
     /*
     |--------------------------------------------------------------------------
