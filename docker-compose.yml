@@ -38,7 +38,7 @@ services:
     container_name: darooghe-phpmyadmin
     restart: always
     ports:
-      - "8081:80"
+      - "8082:80"
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
