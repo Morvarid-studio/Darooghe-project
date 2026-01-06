@@ -140,4 +140,38 @@ class User extends Authenticatable
     {
         return $this->hasMany(Information::class);
     }
+
+    public function salaries()
+    {
+        return $this->hasMany(Salary::class);
+    }
+
+    /**
+     * دریافت آخرین حقوق فعال کاربر
+     */
+    public function getActiveSalary()
+    {
+        return $this->salaries()
+            ->where('is_active', true)
+            ->orderBy('effective_from', 'desc')
+            ->first();
+    }
+
+    /**
+     * دریافت حقوق فعال در تاریخ مشخص
+     */
+    public function getActiveSalaryAt($date = null)
+    {
+        $date = $date ?? now();
+        
+        return $this->salaries()
+            ->where('is_active', true)
+            ->where('effective_from', '<=', $date)
+            ->where(function ($q) use ($date) {
+                $q->whereNull('effective_to')
+                  ->orWhere('effective_to', '>=', $date);
+            })
+            ->orderBy('effective_from', 'desc')
+            ->first();
+    }
 }

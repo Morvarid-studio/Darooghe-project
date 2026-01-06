@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InformationController;
 use App\Http\Controllers\WorklogController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\PaySlipController;
+use App\Http\Controllers\SalaryController;
 
 
 Route::post('/register', [AuthController::class, 'registerPost'])
@@ -47,6 +49,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/worklogs/last_seven_days', [WorklogController::class, 'LastSevenDaysWorkHours'])
         ->name('worklogs_last_seven_days_report');
 
+    // Route‌های فیش حقوقی
+    // ⚠️ مهم: روت‌های خاص (مثل preview) باید قبل از روت‌های پارامتری (مثل {id}) تعریف شوند
+    Route::get('/payslips/preview', [PaySlipController::class, 'preview'])
+        ->name('payslips_preview'); // پیش‌نمایش فیش قبل از ثبت
+    Route::get('/payslips', [PaySlipController::class, 'index'])
+        ->name('payslips_index'); // لیست فیش‌های کاربر
+    Route::get('/payslips/{id}', [PaySlipController::class, 'show'])
+        ->name('payslips_show'); // جزئیات یک فیش
+    Route::post('/payslips', [PaySlipController::class, 'store'])
+        ->name('payslips_store'); // ثبت فیش جدید
+
     // Route‌های حساب‌ها (قبلاً bankinfo)
     Route::get('/accounts/for-transaction', [AccountController::class, 'getAccountsForTransaction'])
         ->name('accounts_for_transaction'); // دریافت لیست حساب‌ها برای ثبت تراکنش (با فیلتر role-based)
@@ -80,12 +93,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('admin')->prefix('admin')->group(function () {
         Route::get('/pending-profiles', [AdminController::class, 'getPendingProfiles'])
             ->name('admin_pending_profiles'); // لیست اطلاعات تایید نشده
+        Route::get('/approved-profiles', [AdminController::class, 'getApprovedProfiles'])
+            ->name('admin_approved_profiles'); // لیست اطلاعات تایید شده
         Route::get('/profiles/{userId}', [AdminController::class, 'getUserProfile'])
             ->name('admin_user_profile'); // جزئیات اطلاعات یک کاربر
         Route::post('/profiles/{userId}/approve', [AdminController::class, 'approveProfile'])
             ->name('admin_approve_profile'); // تایید اطلاعات کاربر
         Route::post('/profiles/{userId}/reject', [AdminController::class, 'rejectProfile'])
             ->name('admin_reject_profile'); // رد اطلاعات کاربر
+        Route::post('/profiles/{userId}/archive', [AdminController::class, 'archiveApprovedProfile'])
+            ->name('admin_archive_profile'); // آرشیو کردن پروفایل تایید شده
         
         // Route‌های داشبورد مالی حساب اصلی شرکت
         Route::get('/company-account/transactions', [CompanyAccountController::class, 'getCompanyTransactions'])
@@ -154,6 +171,22 @@ Route::middleware('auth:sanctum')->group(function () {
         // Route برای دریافت لیست کاربران
         Route::get('/users', [AdminController::class, 'getAllUsers'])
             ->name('admin_users_list'); // دریافت لیست تمام کاربران
+        
+        // Route‌های مدیریت حقوق (برای Admin)
+        Route::get('/users/{userId}/salaries', [SalaryController::class, 'getUserSalaries'])
+            ->name('admin_user_salaries'); // دریافت حقوق‌های یک کاربر
+        Route::post('/salaries', [SalaryController::class, 'store'])
+            ->name('admin_salaries_store'); // ثبت حقوق جدید
+        Route::put('/salaries/{id}', [SalaryController::class, 'update'])
+            ->name('admin_salaries_update'); // به‌روزرسانی حقوق
+        
+        // Route‌های مدیریت فیش حقوقی (برای Admin)
+        Route::get('/payslips', [PaySlipController::class, 'indexAdmin'])
+            ->name('admin_payslips_index'); // لیست همه فیش‌ها با فیلتر
+        Route::get('/payslips/user/{user_id}', [PaySlipController::class, 'indexByUser'])
+            ->name('admin_payslips_by_user'); // فیش‌های یک کاربر خاص
+        Route::get('/payslips/month/{month}', [PaySlipController::class, 'indexByMonth'])
+            ->name('admin_payslips_by_month'); // فیش‌های یک ماه خاص
     });
     
     // Route عمومی برای دریافت لیست role ها (برای dropdown ها)

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('bankinfo');
             $table->decimal('base_salary', 15, 2);
             $table->string('month');
-            $table->decimal('total_work_hours', 3, 2);
+            $table->decimal('total_work_hours', 5, 2); // تغییر از 3,2 به 5,2 برای پشتیبانی از ساعات کاری بیشتر (تا 999.99)
             $table->decimal('salary', 15, 2);
             $table->decimal('payment_amount', 15, 2);
             $table->decimal('remaining_salary_of_this_month', 15, 2);

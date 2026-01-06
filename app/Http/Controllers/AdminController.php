@@ -175,6 +175,78 @@ class AdminController extends Controller
     }
 
     /**
+     * دریافت لیست اطلاعات تایید شده
+     */
+    public function getApprovedProfiles(Request $request)
+    {
+        // دریافت اطلاعات کاربرانی که profile_accepted = true و archive = false
+        $approvedProfiles = Information::where('archive', false)
+            ->where('profile_accepted', true)
+            ->with('user:id,user_name,email,created_at')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // تبدیل تاریخ میلادی به شمسی و اضافه کردن URL فایل‌ها برای هر رکورد
+        $scheme = $request->getScheme();
+        $host = $request->getHost();
+        $port = $request->getPort();
+        if (!$port || ($port == 80 && $scheme == 'http') || ($port == 443 && $scheme == 'https')) {
+            $port = 8080;
+        }
+        $baseUrl = $scheme . '://' . $host . ':' . $port;
+        
+        $approvedProfiles->transform(function ($profile) use ($baseUrl) {
+            $profile->birthday = DateHelper::miladiToShamsi($profile->birthday);
+            
+            // اضافه کردن URL کامل برای فایل‌ها
+            if ($profile->profile_photo) {
+                $storagePath = '/storage/' . $profile->profile_photo;
+                $profile->profile_photo_url = $baseUrl . $storagePath;
+            }
+            if ($profile->resume) {
+                $storagePath = '/storage/' . $profile->resume;
+                $profile->resume_url = $baseUrl . $storagePath;
+            }
+            
+            return $profile;
+        });
+
+        return response()->json([
+            'message' => 'لیست اطلاعات تایید شده',
+            'data' => $approvedProfiles
+        ]);
+    }
+
+    /**
+     * آرشیو کردن پروفایل تایید شده
+     */
+    public function archiveApprovedProfile(Request $request, $userId)
+    {
+        $information = Information::where('user_id', $userId)
+            ->where('archive', false)
+            ->where('profile_accepted', true)
+            ->first();
+
+        if (!$information) {
+            return response()->json([
+                'message' => 'اطلاعات کاربر یافت نشد یا قبلاً آرشیو شده است.'
+            ], 404);
+        }
+
+        // آرشیو کردن اطلاعات
+        $information->update([
+            'archive' => true
+        ]);
+
+        return response()->json([
+            'message' => 'اطلاعات کاربر با موفقیت آرشیو شد.',
+            'data' => [
+                'user_id' => $userId
+            ]
+        ]);
+    }
+
+    /**
      * دریافت لیست تمام کاربران (برای dropdown ها)
      */
     public function getAllUsers(Request $request)
@@ -183,7 +255,9 @@ class AdminController extends Controller
             ->orderBy('user_name')
             ->get();
 
-        return response()->json($users);
+        return response()->json([
+            'data' => $users
+        ]);
     }
 }
 
